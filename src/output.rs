@@ -1,8 +1,18 @@
-use crate::{cursor::Cursor, document::Document, reader::Direction};
+use std::fs;
+
+use crossterm::terminal;
+
+use crate::{
+    cursor::Cursor,
+    document::{Document, Row},
+    reader::Direction,
+};
 
 pub struct Output {
     pub document: Document,
     pub cursor: Cursor,
+    pub screen_rows: u16,
+    pub rows_offset: u16,
 }
 
 impl Output {
@@ -10,7 +20,22 @@ impl Output {
         return Output {
             document: Document::new(),
             cursor: Cursor::new(),
+            screen_rows: terminal::size().unwrap().1,
+            rows_offset: 0,
         };
+    }
+
+    pub fn open(&mut self, filename: &str) -> Result<(), std::io::Error> {
+        let file_content = fs::read_to_string(filename)?;
+        file_content.lines().for_each(|line| {
+            let row = Row::new(line.to_string());
+            self.document.add_row(row)
+        });
+
+        self.cursor.max_y = self.document.rows.len() as u16 - 1;
+        self.cursor.max_x = self.document.get_row(self.cursor.y as usize).content.len() as u16;
+
+        Ok(())
     }
 
     pub fn move_cursor(&mut self, direction: Direction, amount: u16) {
@@ -36,7 +61,20 @@ impl Output {
                     self.cursor.move_cursor(direction, amount);
                 }
             }
-            _ => self.cursor.move_cursor(direction, amount),
+            Direction::Down => {
+                if self.cursor.y > self.screen_rows + self.rows_offset {
+                    self.rows_offset += 1;
+                }
+
+                self.cursor.move_cursor(direction, amount);
+            }
+            Direction::Up => {
+                if self.cursor.y < self.rows_offset && self.rows_offset > 0 {
+                    self.rows_offset -= 1;
+                }
+
+                self.cursor.move_cursor(direction, amount)
+            }
         }
 
         let row = self.document.get_row(self.cursor.y as usize);
@@ -74,13 +112,23 @@ impl Output {
 
     pub fn backspace(&mut self) {
         if self.cursor.x == 0 {
-            return;
+            if self.cursor.y == 0 {
+                return;
+            }
+
+            let row = self.document.get_row(self.cursor.y as usize);
+            let new_row = row.content.clone();
+            self.document.delete_row(self.cursor.y as usize);
+            self.update_row_position(self.cursor.y - 1);
+            let row_to_update = self.document.get_row(self.cursor.y as usize);
+            self.cursor.x = row_to_update.content.len() as u16;
+            row_to_update.content.push_str(&new_row);
+        } else {
+            let row = self.document.get_row(self.cursor.y as usize);
+
+            row.delete((self.cursor.x - 1) as usize);
+            self.move_cursor(Direction::Left, 1);
         }
-
-        let row = self.document.get_row(self.cursor.y as usize);
-
-        row.delete((self.cursor.x - 1) as usize);
-        self.move_cursor(Direction::Left, 1);
     }
 
     pub fn delete(&mut self) {

@@ -23,7 +23,7 @@ pub struct Reader {}
 impl Reader {
     pub fn run(&self) -> crossterm::Result<Command> {
         loop {
-            if let Ok(true) = crossterm::event::poll(Duration::from_millis(100)) {
+            if let Ok(true) = crossterm::event::poll(Duration::from_millis(500)) {
                 match crossterm::event::read()? {
                     Event::Key(KeyEvent {
                         code: KeyCode::Char('q'),

@@ -9,15 +9,25 @@ pub struct Editor {
 }
 
 impl Editor {
-    pub fn new() -> Self {
+    pub fn new(args: &Vec<String>) -> Self {
+        let filename = if args.len() > 1 {
+            args[1].clone()
+        } else {
+            String::from("")
+        };
+
         return Editor {
             reader: Reader {},
-            render: Render::new(),
+            render: Render::new(filename),
         };
     }
 
     pub fn run(&mut self) -> crossterm::Result<()> {
         self.render.clear_screen();
+
+        if self.render.filename.len() > 0 {
+            self.render.output.open(&self.render.filename)?;
+        }
 
         loop {
             self.render.render()?;
@@ -39,14 +49,6 @@ impl Editor {
         }
 
         Ok(())
-    }
-}
-
-impl Drop for Editor {
-    fn drop(&mut self) {
-        self.render
-            .change_cursor_style(crossterm::cursor::CursorShape::Line)
-            .unwrap();
     }
 }
 

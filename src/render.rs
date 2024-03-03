@@ -11,13 +11,15 @@ use crate::output::Output;
 pub struct Render {
     pub writer: RenderWriter,
     pub output: Output,
+    pub filename: String,
 }
 
 impl Render {
-    pub fn new() -> Self {
+    pub fn new(filename: String) -> Self {
         return Render {
             writer: RenderWriter::new(),
             output: Output::new(),
+            filename,
         };
     }
 
@@ -31,15 +33,21 @@ impl Render {
 
     pub fn render(&mut self) -> Result<(), std::io::Error> {
         let x = self.output.cursor.x;
-        let y = self.output.cursor.y;
+        let y = self.output.cursor.y - self.output.rows_offset;
 
         queue!(self.writer, Hide, MoveTo(0, 0))?;
 
-        for row in self.output.document.rows.iter() {
-            self.writer.content.push_str(&row.content);
+        for row_number in 0..self.output.screen_rows + self.output.rows_offset {
+            if row_number as usize >= self.output.document.rows.len() {
+                queue!(self.writer, terminal::Clear(ClearType::UntilNewLine))?;
+                self.writer.content.push_str("~\r\n");
+            } else {
+                let row = self.output.document.get_row(row_number as usize);
+                self.writer.content.push_str(&row.content);
 
-            queue!(self.writer, terminal::Clear(ClearType::UntilNewLine))?;
-            self.writer.content.push_str("\r\n");
+                queue!(self.writer, terminal::Clear(ClearType::UntilNewLine))?;
+                self.writer.content.push_str("\r\n");
+            }
         }
 
         queue!(self.writer, MoveTo(x, y), Show)?;
