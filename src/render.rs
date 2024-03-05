@@ -1,4 +1,7 @@
-use std::io::{self, stdout, Write};
+use std::{
+    io::{self, stdout, Write},
+    usize,
+};
 
 use crossterm::{
     cursor::{CursorShape, Hide, MoveTo, SetCursorShape, Show},
@@ -37,17 +40,17 @@ impl Render {
 
         queue!(self.writer, Hide, MoveTo(0, 0))?;
 
-        for row_number in 0..self.output.screen_rows + self.output.rows_offset {
-            if row_number as usize >= self.output.document.rows.len() {
-                queue!(self.writer, terminal::Clear(ClearType::UntilNewLine))?;
-                self.writer.content.push_str("~\r\n");
+        for row_number in 0..self.output.screen_rows {
+            let file_row = row_number + self.output.rows_offset;
+            if file_row as usize >= self.output.document.rows.len() {
+                self.writer.content.push_str("~");
             } else {
-                let row = self.output.document.get_row(row_number as usize);
+                let row = self.output.document.get_row(file_row as usize).unwrap();
                 self.writer.content.push_str(&row.content);
-
-                queue!(self.writer, terminal::Clear(ClearType::UntilNewLine))?;
-                self.writer.content.push_str("\r\n");
             }
+
+            queue!(self.writer, terminal::Clear(ClearType::UntilNewLine))?;
+            self.writer.content.push_str("\r\n");
         }
 
         queue!(self.writer, MoveTo(x, y), Show)?;

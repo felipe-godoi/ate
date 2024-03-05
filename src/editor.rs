@@ -1,3 +1,5 @@
+use crossterm::cursor::CursorShape;
+
 use crate::{
     reader::{Command, Reader},
     render::Render,
@@ -23,8 +25,6 @@ impl Editor {
     }
 
     pub fn run(&mut self) -> crossterm::Result<()> {
-        self.render.clear_screen();
-
         if self.render.filename.len() > 0 {
             self.render.output.open(&self.render.filename)?;
         }
@@ -49,6 +49,12 @@ impl Editor {
         }
 
         Ok(())
+    }
+}
+
+impl Drop for Editor {
+    fn drop(&mut self) {
+        self.render.change_cursor_style(CursorShape::Line).unwrap();
     }
 }
 

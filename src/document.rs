@@ -4,13 +4,15 @@ pub struct Document {
 
 impl Document {
     pub fn new() -> Self {
-        return Document {
-            rows: vec![Row::new(String::new())],
-        };
+        return Document { rows: vec![] };
     }
 
-    pub fn get_row(&mut self, at: usize) -> &mut Row {
-        &mut self.rows[at]
+    pub fn get_row(&mut self, at: usize) -> Option<&mut Row> {
+        if at >= self.rows.len() {
+            return None;
+        }
+
+        Some(&mut self.rows[at])
     }
 
     pub fn delete_row(&mut self, at: usize) {
@@ -21,8 +23,11 @@ impl Document {
         self.rows.push(row);
     }
 
-    pub fn insert_row(&mut self, at: usize) {
-        self.rows.insert(at, Row::new(String::new()));
+    pub fn insert_row(&mut self, at: usize) -> &mut Row {
+        let new_row = Row::new(String::new());
+
+        self.rows.insert(at, new_row);
+        self.rows.last_mut().unwrap()
     }
 }
 

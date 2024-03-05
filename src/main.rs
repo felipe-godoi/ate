@@ -12,9 +12,9 @@ impl Drop for CleanUp {
 }
 
 fn main() -> crossterm::Result<()> {
+    terminal::enable_raw_mode()?;
     let args: Vec<String> = env::args().collect();
     let _clean_up = CleanUp;
-    terminal::enable_raw_mode()?;
     let mut editor = Editor::new(&args);
     editor.run()?;
     Ok(())

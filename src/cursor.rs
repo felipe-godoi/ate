@@ -30,8 +30,6 @@ impl Cursor {
             Direction::Down => {
                 if self.y + amount < self.max_y {
                     self.y += amount;
-                } else {
-                    self.y = self.max_y;
                 }
             }
             Direction::Left => {
